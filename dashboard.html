@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1762c2">
+<title>M-Yusrah Business</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-head">
+      <h2>M-Yusrah</h2><button id="closeMenu">×</button>
+    </div>
+    <a href="dashboard.html">⌂ Home</a>
+    <a href="addproduct.html">⊕ Add Product</a>
+    <a href="sellproduct.html">⊖ Sell Product</a>
+    <a href="history.html">◷ History</a>
+    <button class="install-side" id="installBtn">⇩ Install App</button>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn"><span>☰</span></button>
+    <div class="brand">M-Yusrah Business</div>
+    <div class="done">✓</div>
+  </header>
+
+  <main class="home-content">
+    <section class="action-row">
+      <a class="primary-btn" href="addproduct.html">⊕ Add Product</a>
+      <a class="remove-btn" href="removeproduct.html">− Remove Product</a><button class="danger-btn" id="resetBtn">× Reset All Data's</button>
+    </section>
+
+    <section class="stats">
+      <article class="stat-card"><small>Total Products</small><strong id="totalProducts">0</strong><span id="totalProductUnits">0 Products</span></article>
+      <article class="stat-card"><small>Total Sales</small><strong id="totalSales">₦0.00</strong><span id="totalTransactions">0 Transactions</span></article>
+      <article class="stat-card profit"><small>Total Profit</small><strong id="totalProfit">₦0.00</strong><span id="profitTransactions">0 Transaction</span></article>
+      <article class="stat-card discount"><small>Total Discounts</small><strong id="totalDiscount">₦0.00</strong><span id="discountCount">0 Discounts</span></article>
+    </section>
+
+    <section class="products-section">
+      <h2>Products List</h2>
+      <div class="products-box">
+        <div class="availability">Current Product's Are Available!</div>
+        <div id="productsList"></div>
+        <div class="empty-state" id="emptyProducts">No products available yet.</div>
+      </div>
+    </section>
+  </main>
+
+  <a class="fab" href="sellproduct.html"><b>＋</b><span>SELL</span></a>
+</div>
+
+<div class="modal" id="confirmModal">
+  <div class="modal-box">
+    <h3>Reset all data?</h3>
+    <p>This will permanently delete all products, sales, profit, discounts and sales history. This action cannot be undone.</p>
+    <div><button class="cancel" id="cancelReset">Cancel</button><button class="confirm" id="confirmReset">Reset</button></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

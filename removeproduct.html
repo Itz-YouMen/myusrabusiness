@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1762c2">
+<title>Remove Product - M-Yusrah Business</title>
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="side-head"><h2>M-Yusrah</h2><button id="closeMenu">×</button></div>
+<a href="dashboard.html">⌂ Home</a><a href="addproduct.html">⊕ Add Product</a>
+<a href="sellproduct.html">⊖ Sell Product</a><a class="active" href="removeproduct.html">− Remove Product</a>
+<a href="history.html">◷ History</a></aside>
+<div class="overlay" id="overlay"></div>
+<header class="topbar"><button class="menu-btn" id="menuBtn"><span>☰</span></button><div class="brand">M-Yusrah Business</div><div class="done">✓</div></header>
+<main class="page-content">
+<h1>Remove a product</h1>
+<form class="form-card" id="removeProductForm">
+<select id="removeSelect" required><option value="">select product</option></select>
+<div class="selected-product-info" id="selectedProductInfo">Select a product to see its available quantity.</div>
+<label class="remove-choice"><input type="radio" name="removeMode" value="all" checked> Delete entire product</label>
+<label class="remove-choice"><input type="radio" name="removeMode" value="quantity"> Delete specific quantity</label>
+<input id="removeQuantity" type="number" min="1" step="1" placeholder="How many do you want to delete?" disabled>
+<button class="remove-submit" type="submit">− Remove Product</button>
+</form>
+<a class="back-btn" href="dashboard.html">Back Home</a>
+</main>
+</div>
+<script src="app.js"></script>
+</body></html>
