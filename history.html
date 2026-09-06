@@ -12,9 +12,9 @@
 <div class="overlay" id="overlay"></div>
 <header class="topbar"><button class="menu-btn" id="menuBtn"><span>☰</span></button><div class="brand">M-Yusrah Business</div><div class="done">✓</div></header>
 <main class="history-content">
-<h1>Sales History</h1>
+<div class="history-title-row"><h1>Sales History</h1><button class="danger-btn" id="deleteAllHistory">× Delete All History</button></div>
 <div id="historyList"></div>
 <div class="empty-state history-empty" id="emptyHistory">No sales history yet.</div>
 </main></div>
-<script src="app.js"></script>
+<div class="modal" id="receiptModal"><div class="receipt-modal-box"><div id="receiptContent"></div><div class="receipt-actions"><button class="share-btn" id="shareReceipt">⇧ Share Receipt</button><button class="confirm" id="okReceipt">OK</button></div></div></div><script src="app.js"></script>
 </body></html>

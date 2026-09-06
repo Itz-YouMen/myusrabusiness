@@ -18,6 +18,7 @@
     <a href="addproduct.html">⊕ Add Product</a>
     <a href="sellproduct.html">⊖ Sell Product</a>
     <a href="history.html">◷ History</a>
+    <a href="analytics.html">▥ Products Analysis</a>
     <button class="install-side" id="installBtn">⇩ Install App</button>
   </aside>
   <div class="overlay" id="overlay"></div>
@@ -54,10 +55,12 @@
   <a class="fab" href="sellproduct.html"><b>＋</b><span>SELL</span></a>
 </div>
 
+<div class="modal" id="receiptModal"><div class="receipt-modal-box"><div id="receiptContent"></div><div class="receipt-actions"><button class="share-btn" id="shareReceipt">⇧ Share Receipt</button><button class="confirm" id="okReceipt">OK</button></div></div></div>
+
 <div class="modal" id="confirmModal">
   <div class="modal-box">
     <h3>Reset all data?</h3>
-    <p>This will permanently delete all products, sales, profit, discounts and sales history. This action cannot be undone.</p>
+    <p>This will delete all current products and reset current sales, profit and discount totals. Sales history will remain محفوظ.</p>
     <div><button class="cancel" id="cancelReset">Cancel</button><button class="confirm" id="confirmReset">Reset</button></div>
   </div>
 </div>

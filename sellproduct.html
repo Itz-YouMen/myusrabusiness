@@ -8,7 +8,7 @@
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar"><div class="side-head"><h2>M-Yusrah</h2><button id="closeMenu">×</button></div>
-<a href="dashboard.html">⌂ Home</a><a href="addproduct.html">⊕ Add Product</a><a class="active" href="sellproduct.html">⊖ Sell Product</a><a href="history.html">◷ History</a></aside>
+<a href="dashboard.html">⌂ Home</a><a href="addproduct.html">⊕ Add Product</a><a class="active" href="sellproduct.html">⊖ Sell Product</a><a href="history.html">◷ History</a><a href="analytics.html">▥ Products Analysis</a></aside>
 <div class="overlay" id="overlay"></div>
 <header class="topbar"><button class="menu-btn" id="menuBtn"><span>☰</span></button><div class="brand">M-Yusrah Business</div><div class="done">✓</div></header>
 <main class="page-content">
@@ -16,7 +16,7 @@
 <form class="form-card sell-form" id="sellProductForm">
 <select id="sellSelect" required><option value="">select product</option></select>
 <div class="sell-info">
-  <div><label>Quantity</label><div class="qty-control"><button type="button" id="minusQty">‹</button><span id="sellQty">0</span><button type="button" id="plusQty">›</button></div></div>
+  <div><label>Quantity</label><div class="qty-control"><button type="button" id="minusQty">‹</button><input id="sellQuantityInput" class="qty-input-direct" type="number" min="1" step="1" placeholder="0"><button type="button" id="plusQty">›</button></div></div>
   <div class="price-preview"><label>Total price</label><strong id="pricePreview">₦0</strong></div>
 </div>
 <input id="discount" type="number" min="0" step="0.01" placeholder="Discount (optional)">
@@ -24,6 +24,6 @@
 <button class="submit-btn" type="submit">⊖ Sell Product</button>
 </form>
 <a class="back-btn" href="dashboard.html">Back Home</a>
-</main></div>
+</main><div class="modal" id="receiptModal"><div class="receipt-modal-box"><div id="receiptContent"></div><div class="receipt-actions"><button class="share-btn" id="shareReceipt">⇧ Share Receipt</button><button class="confirm" id="okReceipt">OK</button></div></div></div>
 <script src="app.js"></script>
 </body></html>

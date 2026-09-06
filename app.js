@@ -1,76 +1,63 @@
-const KEY_PRODUCTS="myusrah_products", KEY_HISTORY="myusrah_history";
+const KEY_PRODUCTS="myusrah_products", KEY_HISTORY="myusrah_history", KEY_STATS="myusrah_stats";
 const getProducts=()=>JSON.parse(localStorage.getItem(KEY_PRODUCTS)||"[]");
 const getHistory=()=>JSON.parse(localStorage.getItem(KEY_HISTORY)||"[]");
+const getStats=()=>JSON.parse(localStorage.getItem(KEY_STATS)||'{"sales":0,"profit":0,"discount":0,"transactions":0,"discountCount":0}');
 const saveProducts=p=>localStorage.setItem(KEY_PRODUCTS,JSON.stringify(p));
 const saveHistory=h=>localStorage.setItem(KEY_HISTORY,JSON.stringify(h));
+const saveStats=s=>localStorage.setItem(KEY_STATS,JSON.stringify(s));
 const money=n=>"₦"+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-const escapeHTML=v=>String(v).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const escapeHTML=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const page=location.pathname.split("/").pop()||"index.html";
 
 function setupMenu(){
  const s=document.getElementById("sidebar"),o=document.getElementById("overlay");
- const open=()=>{s?.classList.add("open");o?.classList.add("show")},close=()=>{s?.classList.remove("open");o?.classList.remove("show")};
- document.getElementById("menuBtn")?.addEventListener("click",open);document.getElementById("closeMenu")?.addEventListener("click",close);o?.addEventListener("click",close);
+ const open=()=>{s?.classList.add("open");o?.classList.add("show")};
+ const close=()=>{s?.classList.remove("open");o?.classList.remove("show")};
+ document.getElementById("menuBtn")?.addEventListener("click",open);
+ document.getElementById("closeMenu")?.addEventListener("click",close);
+ o?.addEventListener("click",close);
 }
-
+function protectPages(){if(page==="index.html"||page==="")return;if(!sessionStorage.getItem("myusrah_logged_in"))location.href="index.html";}
 function login(){
- const form=document.getElementById("loginForm"); if(!form)return;
- form.addEventListener("submit",e=>{
-  e.preventDefault();
-  const username=document.getElementById("username").value.trim(), password=document.getElementById("password").value;
-  const error=document.getElementById("loginError");
-  if((username==="farida"||username==="Farida")&&password==="1985"){
-   sessionStorage.setItem("myusrah_logged_in","true"); location.href="dashboard.html";
-  }else{error.textContent="Incorrect username or password.";document.getElementById("password").value="";}
- });
+ const form=document.getElementById("loginForm");if(!form)return;
+ form.addEventListener("submit",e=>{e.preventDefault();const u=document.getElementById("username").value.trim(),p=document.getElementById("password").value,err=document.getElementById("loginError");if((u==="farida"||u==="Farida")&&p==="1985"){sessionStorage.setItem("myusrah_logged_in","true");location.href="dashboard.html"}else{err.textContent="Incorrect username or password.";document.getElementById("password").value=""}})
 }
-function protectPages(){
- if(location.pathname.endsWith("index.html")||location.pathname.endsWith("/"))return;
- if(!sessionStorage.getItem("myusrah_logged_in")) location.href="index.html";
-}
-
 function renderHome(){
- const products=getProducts(),history=getHistory(),units=products.reduce((a,p)=>a+p.quantity,0);
- const sales=history.reduce((a,h)=>a+h.total,0),profit=history.reduce((a,h)=>a+h.profit,0),discount=history.reduce((a,h)=>a+h.discount,0),discCount=history.filter(h=>h.discount>0).length;
+ const products=getProducts(),stats=getStats(),list=document.getElementById("productsList"),empty=document.getElementById("emptyProducts");if(!list)return;
+ const units=products.reduce((a,p)=>a+Number(p.quantity),0);
  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
- set("totalProducts",units);set("totalProductUnits",units+" Products");set("totalSales",money(sales));set("totalTransactions",history.length+" Transactions");
- set("totalProfit",money(profit));set("profitTransactions",history.length+" Transaction"+(history.length!==1?"s":""));set("totalDiscount",money(discount));set("discountCount",discCount+" Discounts");
- const list=document.getElementById("productsList"),empty=document.getElementById("emptyProducts");if(!list)return;list.innerHTML="";
- products.filter(p=>p.quantity>0).forEach(p=>list.innerHTML+=`<div class="product-row"><div><small>Product Name</small><strong>${escapeHTML(p.name)}</strong></div><div><small>Product Price</small><strong>${money(p.sellPrice)}</strong></div><div><small>Product Quantity</small><strong>${p.quantity}</strong></div></div>`);
- empty.style.display=products.some(p=>p.quantity>0)?"none":"block";
+ set("totalProducts",units);set("totalProductUnits",products.filter(p=>p.quantity>0).length+" Product Types • "+units+" Units");
+ set("totalSales",money(stats.sales));set("totalTransactions",stats.transactions+" Transactions");set("totalProfit",money(stats.profit));set("profitTransactions",stats.transactions+" Transaction"+(stats.transactions!==1?"s":""));set("totalDiscount",money(stats.discount));set("discountCount",stats.discountCount+" Discounts");
+ list.innerHTML="";const active=products.filter(p=>p.quantity>0);active.forEach((p,i)=>list.innerHTML+=`<div class="product-row"><div class="product-no">#${i+1}</div><div><small>Product Name</small><strong>${escapeHTML(p.name)}</strong></div><div><small>Product Price</small><strong>${money(p.sellPrice)}</strong></div><div><small>Product Quantity</small><strong>${p.quantity}</strong></div></div>`);
+ empty.style.display=active.length?"none":"block";
 }
-function addProduct(){
- document.getElementById("addProductForm")?.addEventListener("submit",e=>{
-  e.preventDefault();const name=document.getElementById("productName").value.trim(),buy=+document.getElementById("buyPrice").value,sell=+document.getElementById("sellPrice").value,qty=+document.getElementById("quantity").value;
-  if(!name||qty<1||buy<0||sell<0)return alert("Please enter valid product information.");
-  const ps=getProducts(),same=ps.find(p=>p.name.toLowerCase()===name.toLowerCase()&&p.buyPrice===buy&&p.sellPrice===sell);
-  if(same)same.quantity+=qty;else ps.push({id:Date.now(),name,buyPrice:buy,sellPrice:sell,quantity:qty});
-  saveProducts(ps);alert("Product added successfully!");location.href="dashboard.html";
- });
-}
+function addProduct(){document.getElementById("addProductForm")?.addEventListener("submit",e=>{e.preventDefault();const name=document.getElementById("productName").value.trim(),buy=+document.getElementById("buyPrice").value,sell=+document.getElementById("sellPrice").value,qty=+document.getElementById("quantity").value;if(!name||qty<1||buy<0||sell<0)return alert("Please enter valid product information.");const ps=getProducts(),same=ps.find(p=>p.name.toLowerCase()===name.toLowerCase()&&p.buyPrice===buy&&p.sellPrice===sell);if(same)same.quantity+=qty;else ps.push({id:Date.now(),name,buyPrice:buy,sellPrice:sell,quantity:qty});saveProducts(ps);alert("Product added successfully!");location.href="dashboard.html"})}
+
+function receiptText(h){return `M-YUSRAH BUSINESS\n------------------------------\nSALES RECEIPT\nReceipt No: ${h.receiptNo}\nProduct: ${h.product}\nQuantity: ${h.quantity}\nUnit Price: ${money(h.unitPrice)}\nSubtotal: ${money(h.subtotal)}\nDiscount: ${money(h.discount)}\nTOTAL: ${money(h.total)}\nClient: ${h.client}\nDate: ${h.date}\nTime: ${h.time}\n------------------------------\nThank you for your patronage.`}
+function receiptHTML(h){return `<div class="receipt"><div class="receipt-brand">M-YUSRAH BUSINESS</div><div class="receipt-title">SALES RECEIPT</div><div class="receipt-line"><span>Receipt No.</span><b>${escapeHTML(h.receiptNo)}</b></div><div class="receipt-line"><span>Product</span><b>${escapeHTML(h.product)}</b></div><div class="receipt-line"><span>Quantity</span><b>${h.quantity}</b></div><div class="receipt-line"><span>Unit Price</span><b>${money(h.unitPrice)}</b></div><div class="receipt-line"><span>Subtotal</span><b>${money(h.subtotal)}</b></div><div class="receipt-line"><span>Discount</span><b>${money(h.discount)}</b></div><div class="receipt-total"><span>TOTAL</span><b>${money(h.total)}</b></div><div class="receipt-line"><span>Client</span><b>${escapeHTML(h.client)}</b></div><div class="receipt-line"><span>Date</span><b>${h.date}</b></div><div class="receipt-line"><span>Time</span><b>${h.time}</b></div><p>Thank you for your patronage.</p></div>`}
+function openReceipt(h,redirect=false){const modal=document.getElementById("receiptModal");if(!modal)return;modal.classList.add("show");document.getElementById("receiptContent").innerHTML=receiptHTML(h);document.getElementById("shareReceipt").onclick=()=>shareReceipt(h);document.getElementById("okReceipt").onclick=()=>{modal.classList.remove("show");if(redirect)location.href="dashboard.html"};}
+async function shareReceipt(h){const text=receiptText(h);try{if(navigator.share){const file=new File([text],`${h.receiptNo}.txt`,{type:"text/plain"});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:`M-Yusrah Receipt ${h.receiptNo}`,text,files:[file]});}else{await navigator.share({title:`M-Yusrah Receipt ${h.receiptNo}`,text});}}else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert("Receipt copied. You can paste it into Bluetooth, WhatsApp or another sharing app.");}else{alert(text)}}catch(e){} }
+function shareReceiptFromHistory(h){openReceipt(h,false)}
 function sellProduct(){
  const select=document.getElementById("sellSelect");if(!select)return;let products=getProducts(),qty=0;
  const fill=()=>select.innerHTML='<option value="">select product</option>'+products.filter(p=>p.quantity>0).map(p=>`<option value="${p.id}">${escapeHTML(p.name)} (${p.quantity} available)</option>`).join("");
  const selected=()=>products.find(p=>String(p.id)===select.value);
- function update(){const p=selected();if(!p){qty=0;document.getElementById("sellQty").textContent=0;document.getElementById("pricePreview").textContent="₦0";return}if(qty>p.quantity)qty=p.quantity;document.getElementById("sellQty").textContent=qty;const d=Math.min(+document.getElementById("discount").value||0,p.sellPrice*qty);document.getElementById("pricePreview").textContent=money(Math.max(0,p.sellPrice*qty-d));}
- fill();select.onchange=()=>{qty=selected()?1:0;update()};document.getElementById("plusQty").onclick=()=>{const p=selected();if(p&&qty<p.quantity){qty++;update()}};document.getElementById("minusQty").onclick=()=>{if(qty>1){qty--;update()}};document.getElementById("discount").oninput=update;
- document.getElementById("sellProductForm").addEventListener("submit",e=>{e.preventDefault();const p=selected(),client=document.getElementById("clientName").value.trim();if(!p||qty<1||!client)return alert("Please select a product, quantity and client name.");const gross=p.sellPrice*qty,d=Math.min(+document.getElementById("discount").value||0,gross),total=gross-d,profit=total-p.buyPrice*qty,now=new Date();const h=getHistory();h.unshift({id:Date.now(),product:p.name,quantity:qty,total,discount:d,client,date:now.toLocaleDateString(),time:now.toLocaleTimeString(),profit});p.quantity-=qty;saveProducts(products);saveHistory(h);location.href="dashboard.html";});
+ const qtyInput=document.getElementById("sellQuantityInput");
+ function update(){const p=selected();if(!p){qty=0;if(qtyInput)qtyInput.value="";document.getElementById("sellQty").textContent=0;document.getElementById("pricePreview").textContent="₦0";return}if(qty>p.quantity)qty=p.quantity;if(qty<0)qty=0;if(qtyInput)qtyInput.value=qty||"";document.getElementById("sellQty").textContent=qty;const d=Math.min(+document.getElementById("discount").value||0,p.sellPrice*qty);document.getElementById("pricePreview").textContent=money(Math.max(0,p.sellPrice*qty-d));}
+ fill();select.onchange=()=>{const p=selected();qty=p?1:0;update()};
+ document.getElementById("plusQty").onclick=()=>{const p=selected();if(p&&qty<p.quantity){qty++;update()}};
+ document.getElementById("minusQty").onclick=()=>{if(qty>1){qty--;update()}};
+ qtyInput?.addEventListener("input",()=>{const p=selected();let n=parseInt(qtyInput.value||"0",10);if(!p){qty=0;return}if(n>p.quantity){alert(`Only ${p.quantity} item(s) are available.`);n=p.quantity;qtyInput.value=n}qty=Math.max(0,n);update()});
+ document.getElementById("discount").oninput=update;
+ document.getElementById("sellProductForm").addEventListener("submit",e=>{e.preventDefault();products=getProducts();const p=products.find(x=>String(x.id)===select.value),client=document.getElementById("clientName").value.trim(),entered=parseInt(qtyInput?.value||qty,10);if(!p||!client||!Number.isInteger(entered)||entered<1)return alert("Please select a product, enter a valid quantity and client name.");if(entered>p.quantity){return alert(`Only ${p.quantity} item(s) are available. You cannot sell more than the available quantity.`)}qty=entered;const gross=p.sellPrice*qty,d=Math.min(+document.getElementById("discount").value||0,gross),total=gross-d,profit=total-p.buyPrice*qty,now=new Date(),h=getHistory(),receiptNo="MY-"+now.getFullYear()+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(Date.now()).slice(-6),item={id:Date.now(),receiptNo,product:p.name,quantity:qty,unitPrice:p.sellPrice,subtotal:gross,total,discount:d,client,date:now.toLocaleDateString(),time:now.toLocaleTimeString(),profit};h.unshift(item);p.quantity-=qty;saveProducts(products);saveHistory(h);const s=getStats();s.sales+=total;s.profit+=profit;s.discount+=d;s.transactions++;if(d>0)s.discountCount++;saveStats(s);openReceipt(item,true);});
 }
-function removeProduct(){
- const select=document.getElementById("removeSelect");if(!select)return;
- const qtyInput=document.getElementById("removeQuantity"),info=document.getElementById("selectedProductInfo");
- const fill=()=>{const ps=getProducts();select.innerHTML='<option value="">select product</option>'+ps.filter(p=>p.quantity>0).map(p=>`<option value="${p.id}">${escapeHTML(p.name)} (${p.quantity} available)</option>`).join("");};
- const selected=()=>getProducts().find(p=>String(p.id)===select.value);
- function mode(){const specific=document.querySelector('input[name="removeMode"]:checked')?.value==="quantity";qtyInput.disabled=!specific;if(!specific)qtyInput.value="";}
- document.querySelectorAll('input[name="removeMode"]').forEach(r=>r.addEventListener("change",mode));
- select.addEventListener("change",()=>{const p=selected();info.textContent=p?`${p.name}: ${p.quantity} product(s) currently available.`:"Select a product to see its available quantity.";if(p)qtyInput.max=p.quantity;});
- document.getElementById("removeProductForm").addEventListener("submit",e=>{e.preventDefault();const ps=getProducts(),p=ps.find(x=>String(x.id)===select.value);if(!p)return alert("Please select a product.");const specific=document.querySelector('input[name="removeMode"]:checked').value==="quantity";
- if(specific){const n=+qtyInput.value;if(!Number.isInteger(n)||n<1)return alert("Enter a valid quantity.");if(n>p.quantity)return alert("You cannot remove more than the available quantity.");p.quantity-=n;if(p.quantity===0)ps.splice(ps.indexOf(p),1);}
- else {if(!confirm(`Delete all of "${p.name}"?`))return;ps.splice(ps.indexOf(p),1);}
- saveProducts(ps);alert("Product updated successfully.");location.href="dashboard.html";});
- fill();mode();
+function renderHistory(){const list=document.getElementById("historyList"),empty=document.getElementById("emptyHistory");if(!list)return;const h=getHistory();list.innerHTML="";h.forEach(x=>list.innerHTML+=`<article class="history-card"><div class="history-head"><div><h3>${escapeHTML(x.product)}</h3><small>${escapeHTML(x.receiptNo)}</small></div><button class="delete-history" data-id="${x.id}" title="Delete this history">−</button></div><div class="history-grid"><div><span>Quantity</span><br><b>${x.quantity}</b></div><div><span>Total Price</span><br><b>${money(x.total)}</b></div><div><span>Discount</span><br><b>${money(x.discount)}</b></div><div><span>Client Name</span><br><b>${escapeHTML(x.client)}</b></div><div><span>Date</span><br><b>${x.date}</b></div><div><span>Time</span><br><b>${x.time}</b></div></div><button class="view-receipt" data-id="${x.id}">View Receipt</button></article>`);empty.style.display=h.length?"none":"block";
+ list.querySelectorAll(".delete-history").forEach(b=>b.onclick=()=>{if(!confirm("Delete this history only?"))return;const id=+b.dataset.id;saveHistory(getHistory().filter(x=>x.id!==id));renderHistory()});
+ list.querySelectorAll(".view-receipt").forEach(b=>b.onclick=()=>{const x=getHistory().find(x=>x.id===+b.dataset.id);if(x)openReceipt(x,false)});
 }
-function renderHistory(){const list=document.getElementById("historyList"),empty=document.getElementById("emptyHistory");if(!list)return;const h=getHistory();list.innerHTML="";h.forEach(x=>list.innerHTML+=`<article class="history-card"><h3>${escapeHTML(x.product)}</h3><div class="history-grid"><div><span>Quantity</span><br><b>${x.quantity}</b></div><div><span>Total Price</span><br><b>${money(x.total)}</b></div><div><span>Discount</span><br><b>${money(x.discount)}</b></div><div><span>Client Name</span><br><b>${escapeHTML(x.client)}</b></div><div><span>Date</span><br><b>${x.date}</b></div><div><span>Time</span><br><b>${x.time}</b></div></div></article>`);empty.style.display=h.length?"none":"block";}
-function resetData(){const modal=document.getElementById("confirmModal");if(!modal)return;document.getElementById("resetBtn").onclick=()=>modal.classList.add("show");document.getElementById("cancelReset").onclick=()=>modal.classList.remove("show");document.getElementById("confirmReset").onclick=()=>{saveProducts([]);saveHistory([]);modal.classList.remove("show");renderHome()};}
-let deferredPrompt;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e});document.addEventListener("click",async e=>{if(e.target.id==="installBtn"&&deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}});
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
-protectPages();setupMenu();login();renderHome();addProduct();sellProduct();removeProduct();renderHistory();resetData();
+function deleteAllHistory(){const b=document.getElementById("deleteAllHistory");if(!b)return;b.onclick=()=>{if(confirm("Delete ALL sales history? This cannot be undone.")){saveHistory([]);renderHistory()}}}
+function resetData(){const modal=document.getElementById("confirmModal");if(!modal)return;document.getElementById("resetBtn").onclick=()=>modal.classList.add("show");document.getElementById("cancelReset").onclick=()=>modal.classList.remove("show");document.getElementById("confirmReset").onclick=()=>{saveProducts([]);saveStats({sales:0,profit:0,discount:0,transactions:0,discountCount:0});modal.classList.remove("show");renderHome()}}
+function removeProduct(){const select=document.getElementById("removeSelect");if(!select)return;const qtyInput=document.getElementById("removeQuantity"),info=document.getElementById("selectedProductInfo"),fill=()=>{const ps=getProducts();select.innerHTML='<option value="">select product</option>'+ps.filter(p=>p.quantity>0).map(p=>`<option value="${p.id}">${escapeHTML(p.name)} (${p.quantity} available)</option>`).join("")};const selected=()=>getProducts().find(p=>String(p.id)===select.value);const mode=()=>{const sp=document.querySelector('input[name="removeMode"]:checked')?.value==="quantity";qtyInput.disabled=!sp;if(!sp)qtyInput.value=""};document.querySelectorAll('input[name="removeMode"]').forEach(r=>r.onchange=mode);select.onchange=()=>{const p=selected();info.textContent=p?`${p.name}: ${p.quantity} product(s) currently available.`:"Select a product to see its available quantity.";if(p)qtyInput.max=p.quantity};document.getElementById("removeProductForm").onsubmit=e=>{e.preventDefault();const ps=getProducts(),p=ps.find(x=>String(x.id)===select.value);if(!p)return alert("Please select a product.");if(document.querySelector('input[name="removeMode"]:checked').value==="quantity"){const n=+qtyInput.value;if(!Number.isInteger(n)||n<1)return alert("Enter a valid quantity.");if(n>p.quantity)return alert("You cannot remove more than the available quantity.");p.quantity-=n;if(p.quantity===0)ps.splice(ps.indexOf(p),1)}else{if(!confirm(`Delete all of "${p.name}"?`))return;ps.splice(ps.indexOf(p),1)}saveProducts(ps);alert("Product updated successfully.");location.href="dashboard.html"};fill();mode()}
+function analytics(){const canvas=document.getElementById("productsChart"),bestCanvas=document.getElementById("salesChart");if(!canvas||!bestCanvas)return;const products=getProducts(),history=getHistory();function setup(c){const dpr=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*dpr;c.height=h*dpr;const x=c.getContext("2d");x.scale(dpr,dpr);return [x,w,h]}function bars(c,data,title){const [x,w,h]=setup(c);x.clearRect(0,0,w,h);x.font="16px Arial";x.fillStyle="#3d4147";x.fillText(title,12,24);const max=Math.max(1,...data.map(d=>d.v)),left=38,bottom=35,top=45,gap=10,bw=Math.max(18,(w-left-gap*(data.length+1))/Math.max(1,data.length));x.strokeStyle="#aab4c1";x.beginPath();x.moveTo(left,top);x.lineTo(left,h-bottom);x.lineTo(w-8,h-bottom);x.stroke();data.forEach((d,i)=>{const bh=(h-bottom-top)*d.v/max,xx=left+gap+i*(bw+gap),yy=h-bottom-bh;x.fillStyle="#2165bf";x.fillRect(xx,yy,bw,bh);x.fillStyle="#4f5862";x.font="12px Arial";x.fillText(String(d.v),xx,yy-5);x.save();x.translate(xx+bw/2,h-bottom+12);x.rotate(-.55);x.textAlign="right";x.fillText(d.n.slice(0,13),0,0);x.restore()})}bars(canvas,products.filter(p=>p.quantity>0).map(p=>({n:p.name,v:p.quantity})),"Available Quantity");const counts={};history.forEach(h=>counts[h.product]=(counts[h.product]||0)+h.quantity);const data=Object.entries(counts).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v).slice(0,8);bars(bestCanvas,data,"Most Sold Products");window.onresize=()=>analytics()}
+let deferredPrompt;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e});document.addEventListener("click",async e=>{if(e.target.id==="installBtn"&&deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}});if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
+protectPages();setupMenu();login();renderHome();addProduct();sellProduct();removeProduct();renderHistory();deleteAllHistory();resetData();analytics();
