@@ -1,9 +1,1 @@
-{
-  "name":"M-Yusrah Business",
-  "short_name":"M-Yusrah",
-  "start_url":"./index.html",
-  "display":"standalone",
-  "background_color":"#e9eaec",
-  "theme_color":"#1762c2",
-  "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"}]
-}
+{"name":"Y-M Business Analysis","short_name":"YM Business","start_url":"./index.html","display":"standalone","background_color":"#e9eaec","theme_color":"#1762c2","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
