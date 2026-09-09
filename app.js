@@ -18,24 +18,18 @@ function setupMenu(){
  o?.addEventListener("click",close);
 }
 function protectPages(){if(page==="index.html"||page==="")return;if(!sessionStorage.getItem("myusrah_logged_in"))location.href="index.html";}
-async function notify(title,body){
- if(!("Notification" in window)) return false;
- try{
-  if(Notification.permission!=="granted"){
-   if(Notification.permission==="denied") return false;
-   const permission=await Notification.requestPermission();
-   if(permission!=="granted") return false;
-  }
-  const registration=await navigator.serviceWorker?.ready;
-  if(registration?.showNotification){
-   await registration.showNotification(title,{body,icon:"icon-192.png",badge:"icon-192.png",tag:"ym-business",renotify:true});
-  }else{
-   new Notification(title,{body,icon:"icon-192.png"});
-  }
-  return true;
- }catch(e){
-  try{new Notification(title,{body,icon:"icon-192.png"});return true}catch(_){return false}
- }
+function notify(title,body){
+ if(!('Notification' in window)) return;
+ const show=()=>navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png'})).catch(()=>new Notification(title,{body,icon:'icon-192.png'}));
+ if(Notification.permission==='granted') show();
+ else if(Notification.permission!=='denied') Notification.requestPermission().then(p=>{if(p==='granted')show()});
+}
+function login(){
+ const form=document.getElementById("loginForm");if(!form)return;
+ form.addEventListener("submit",e=>{e.preventDefault();const u=document.getElementById("username").value.trim(),p=document.getElementById("password").value,err=document.getElementById("loginError");
+ const valid=(u==="farida"||u==="Farida")&&p==="1985" || (u==="youmen"||u==="Youmen")&&p==="0622" || (u==="Business"||u==="business")&&p==="2030";
+ if(valid){sessionStorage.setItem("myusrah_logged_in","true");notify("Y-M Business Analysis","Wellcome to YM Business Analysis");location.href="dashboard.html"}
+ else{err.textContent="Incorrect username or password.";document.getElementById("password").value=""}})
 }
 
 function renderHome(){
@@ -47,7 +41,7 @@ function renderHome(){
  list.innerHTML="";const active=products.filter(p=>p.quantity>0);active.forEach((p,i)=>list.innerHTML+=`<div class="product-row"><div class="product-no">#${i+1}</div><div><small>Product Name</small><strong>${escapeHTML(p.name)}</strong></div><div><small>Product Price</small><strong>${money(p.sellPrice)}</strong></div><div><small>Product Quantity</small><strong>${p.quantity}</strong></div></div>`);
  empty.style.display=active.length?"none":"block";
 }
-function addProduct(){document.getElementById("addProductForm")?.addEventListener("submit",e=>{e.preventDefault();const name=document.getElementById("productName").value.trim(),buy=+document.getElementById("buyPrice").value,sell=+document.getElementById("sellPrice").value,qty=+document.getElementById("quantity").value;if(!name||qty<1||buy<0||sell<0)return alert("Please enter valid product information.");const ps=getProducts(),same=ps.find(p=>p.name.toLowerCase()===name.toLowerCase()&&p.buyPrice===buy&&p.sellPrice===sell);if(same)same.quantity+=qty;else ps.push({id:Date.now(),name,buyPrice:buy,sellPrice:sell,quantity:qty});saveProducts(ps);(async()=>{if((same?same.quantity:qty)<=10)await notify("Low stock alert",`${name} has only ${(same?same.quantity:qty)} item(s) remaining.`);alert("Product added successfully!");location.href="dashboard.html"})()})}
+function addProduct(){document.getElementById("addProductForm")?.addEventListener("submit",e=>{e.preventDefault();const name=document.getElementById("productName").value.trim(),buy=+document.getElementById("buyPrice").value,sell=+document.getElementById("sellPrice").value,qty=+document.getElementById("quantity").value;if(!name||qty<1||buy<0||sell<0)return alert("Please enter valid product information.");const ps=getProducts(),same=ps.find(p=>p.name.toLowerCase()===name.toLowerCase()&&p.buyPrice===buy&&p.sellPrice===sell);if(same)same.quantity+=qty;else ps.push({id:Date.now(),name,buyPrice:buy,sellPrice:sell,quantity:qty});saveProducts(ps);alert("Product added successfully!");location.href="dashboard.html"})}
 
 function receiptText(h){return `Y-M BUSINESS ANALYSIS\n------------------------------\nSALES RECEIPT\nReceipt No: ${h.receiptNo}\nProduct: ${h.product}\nQuantity: ${h.quantity}\nUnit Price: ${money(h.unitPrice)}\nSubtotal: ${money(h.subtotal)}\nDiscount: ${money(h.discount)}\nTOTAL: ${money(h.total)}\nClient: ${h.client}\nDate: ${h.date}\nTime: ${h.time}\n------------------------------\nThank you for your patronage.`}
 function receiptHTML(h){return `<div class="receipt"><div class="receipt-brand">Y-M BUSINESS ANALYSIS</div><div class="receipt-title">SALES RECEIPT</div><div class="receipt-line"><span>Receipt No.</span><b>${escapeHTML(h.receiptNo)}</b></div><div class="receipt-line"><span>Product</span><b>${escapeHTML(h.product)}</b></div><div class="receipt-line"><span>Quantity</span><b>${h.quantity}</b></div><div class="receipt-line"><span>Unit Price</span><b>${money(h.unitPrice)}</b></div><div class="receipt-line"><span>Subtotal</span><b>${money(h.subtotal)}</b></div><div class="receipt-line"><span>Discount</span><b>${money(h.discount)}</b></div><div class="receipt-total"><span>TOTAL</span><b>${money(h.total)}</b></div><div class="receipt-line"><span>Client</span><b>${escapeHTML(h.client)}</b></div><div class="receipt-line"><span>Date</span><b>${h.date}</b></div><div class="receipt-line"><span>Time</span><b>${h.time}</b></div><p>Thank you for your patronage.</p></div>`}
@@ -108,7 +102,7 @@ function sellProduct(){
  document.getElementById("minusQty").onclick=()=>{if(qty>1){qty--;update()}};
  qtyInput?.addEventListener("input",()=>{const p=selected();let n=parseInt(qtyInput.value||"0",10);if(!p){qty=0;return}if(n>p.quantity){alert(`Only ${p.quantity} item(s) are available.`);n=p.quantity;qtyInput.value=n}qty=Math.max(0,n);update()});
  document.getElementById("discount").oninput=update;
- document.getElementById("sellProductForm").addEventListener("submit",e=>{e.preventDefault();products=getProducts();const p=products.find(x=>String(x.id)===select.value),client=document.getElementById("clientName").value.trim(),entered=parseInt(qtyInput?.value||qty,10);if(!p||!client||!Number.isInteger(entered)||entered<1)return alert("Please select a product, enter a valid quantity and client name.");if(entered>p.quantity){return alert(`Only ${p.quantity} item(s) are available. You cannot sell more than the available quantity.`)}qty=entered;const gross=p.sellPrice*qty,d=Math.min(+document.getElementById("discount").value||0,gross),total=gross-d,profit=total-p.buyPrice*qty,now=new Date(),h=getHistory(),receiptNo="MY-"+now.getFullYear()+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(Date.now()).slice(-6),item={id:Date.now(),receiptNo,product:p.name,quantity:qty,unitPrice:p.sellPrice,subtotal:gross,total,discount:d,client,date:now.toLocaleDateString(),time:now.toLocaleTimeString(),profit};h.unshift(item);p.quantity-=qty;saveProducts(products);saveHistory(h);const s=getStats();s.sales+=total;s.profit+=profit;s.discount+=d;s.transactions++;if(d>0)s.discountCount++;saveStats(s);openReceipt(item,true);(async()=>{await notify(`${p.name} sold to ${client}`,`${p.name} sold to ${client} • ${item.date} • ${item.time}`);if(p.quantity<=10)await notify("Low stock alert",`${p.name} has only ${p.quantity} item(s) remaining.`)})();});
+ document.getElementById("sellProductForm").addEventListener("submit",e=>{e.preventDefault();products=getProducts();const p=products.find(x=>String(x.id)===select.value),client=document.getElementById("clientName").value.trim(),entered=parseInt(qtyInput?.value||qty,10);if(!p||!client||!Number.isInteger(entered)||entered<1)return alert("Please select a product, enter a valid quantity and client name.");if(entered>p.quantity){return alert(`Only ${p.quantity} item(s) are available. You cannot sell more than the available quantity.`)}qty=entered;const gross=p.sellPrice*qty,d=Math.min(+document.getElementById("discount").value||0,gross),total=gross-d,profit=total-p.buyPrice*qty,now=new Date(),h=getHistory(),receiptNo="MY-"+now.getFullYear()+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(Date.now()).slice(-6),item={id:Date.now(),receiptNo,product:p.name,quantity:qty,unitPrice:p.sellPrice,subtotal:gross,total,discount:d,client,date:now.toLocaleDateString(),time:now.toLocaleTimeString(),profit};h.unshift(item);p.quantity-=qty;saveProducts(products);saveHistory(h);const s=getStats();s.sales+=total;s.profit+=profit;s.discount+=d;s.transactions++;if(d>0)s.discountCount++;saveStats(s);notify(`${p.name} sold to ${client}`,`${p.name} sold to ${client} • ${item.date} • ${item.time}`);if(p.quantity<=10){notify("Low stock alert",`${p.name} has only ${p.quantity} item(s) remaining.`)}openReceipt(item,true);});
 }
 function renderHistory(){const list=document.getElementById("historyList"),empty=document.getElementById("emptyHistory");if(!list)return;const h=getHistory();list.innerHTML="";h.forEach(x=>list.innerHTML+=`<article class="history-card"><div class="history-head"><div><h3>${escapeHTML(x.product)}</h3><small>${escapeHTML(x.receiptNo)}</small></div></div><div class="history-grid"><div><span>Quantity</span><br><b>${x.quantity}</b></div><div><span>Total Price</span><br><b>${money(x.total)}</b></div><div><span>Discount</span><br><b>${money(x.discount)}</b></div><div><span>Client Name</span><br><b>${escapeHTML(x.client)}</b></div><div><span>Date</span><br><b>${x.date}</b></div><div><span>Time</span><br><b>${x.time}</b></div></div><button class="view-receipt" data-id="${x.id}">View Receipt</button></article>`);empty.style.display=h.length?"none":"block";list.querySelectorAll(".view-receipt").forEach(b=>b.onclick=()=>{const x=getHistory().find(x=>x.id===+b.dataset.id);if(x)openReceipt(x,false)})}
 function deleteAllHistory(){const b=document.getElementById("deleteAllHistory");if(!b)return;b.onclick=()=>{if(confirm("Delete ALL sales history? This cannot be undone.")){saveHistory([]);renderHistory()}}}
@@ -118,7 +112,7 @@ function removeProduct(){
  const fill=()=>{const ps=getProducts();select.innerHTML='<option value="">select product</option>'+ps.filter(p=>p.quantity>0).map(p=>`<option value="${p.id}">${escapeHTML(p.name)} (${p.quantity} available)</option>`).join("")};
  const selected=()=>getProducts().find(p=>String(p.id)===select.value);
  select.onchange=()=>{const p=selected();if(!p){info.textContent="Select a product to edit.";return}nameInput.value=p.name;buyInput.value=p.buyPrice;sellInput.value=p.sellPrice;qtyInput.value=p.quantity;info.textContent=`Editing: ${p.name} • ${p.quantity} available.`};
- document.getElementById("removeProductForm").onsubmit=e=>{e.preventDefault();const ps=getProducts(),p=ps.find(x=>String(x.id)===select.value);if(!p)return alert("Please select a product.");const q=+qtyInput.value,b=+buyInput.value,sp=+sellInput.value,n=nameInput.value.trim();if(!n||!Number.isInteger(q)||q<1||b<0||sp<0)return alert("Enter valid product details.");p.name=n;p.quantity=q;p.buyPrice=b;p.sellPrice=sp;saveProducts(ps);(async()=>{if(q<=10)await notify("Low stock alert",`${n} has only ${q} item(s) remaining.`);alert("Product updated successfully.");location.href="dashboard.html"})()};fill();
+ document.getElementById("removeProductForm").onsubmit=e=>{e.preventDefault();const ps=getProducts(),p=ps.find(x=>String(x.id)===select.value);if(!p)return alert("Please select a product.");const q=+qtyInput.value,b=+buyInput.value,sp=+sellInput.value,n=nameInput.value.trim();if(!n||!Number.isInteger(q)||q<1||b<0||sp<0)return alert("Enter valid product details.");p.name=n;p.quantity=q;p.buyPrice=b;p.sellPrice=sp;saveProducts(ps);alert("Product updated successfully.");location.href="dashboard.html"};fill();
 }
 
 function analytics(){
