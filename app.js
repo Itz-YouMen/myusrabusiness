@@ -18,17 +18,28 @@ function setupMenu(){
  o?.addEventListener("click",close);
 }
 function protectPages(){if(page==="index.html"||page==="")return;if(!sessionStorage.getItem("myusrah_logged_in"))location.href="index.html";}
-function notify(title,body){
- if(!('Notification' in window)) return;
- const show=()=>navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png'})).catch(()=>new Notification(title,{body,icon:'icon-192.png'}));
- if(Notification.permission==='granted') show();
- else if(Notification.permission!=='denied') Notification.requestPermission().then(p=>{if(p==='granted')show()});
+async function notify(title,body){
+ if(!('Notification' in window)) return false;
+ try{
+  if(Notification.permission!=='granted'){
+   if(Notification.permission==='denied') return false;
+   const permission=await Notification.requestPermission();
+   if(permission!=='granted') return false;
+  }
+  if(navigator.serviceWorker){
+   const registration=await navigator.serviceWorker.ready;
+   await registration.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png'});
+  }else{
+   new Notification(title,{body,icon:'icon-192.png'});
+  }
+  return true;
+ }catch(e){return false}
 }
 function login(){
  const form=document.getElementById("loginForm");if(!form)return;
  form.addEventListener("submit",e=>{e.preventDefault();const u=document.getElementById("username").value.trim(),p=document.getElementById("password").value,err=document.getElementById("loginError");
  const valid=(u==="farida"||u==="Farida")&&p==="1985" || (u==="youmen"||u==="Youmen")&&p==="0622" || (u==="Business"||u==="business")&&p==="2030";
- if(valid){sessionStorage.setItem("myusrah_logged_in","true");notify("Y-M Business Analysis","Wellcome to YM Business Analysis");location.href="dashboard.html"}
+ if(valid){sessionStorage.setItem("myusrah_logged_in","true");notify("Y-M Business Analysis","Wellcome to YM Business Analysis").finally(()=>{location.href="dashboard.html"})}
  else{err.textContent="Incorrect username or password.";document.getElementById("password").value=""}})
 }
 
@@ -102,7 +113,7 @@ function sellProduct(){
  document.getElementById("minusQty").onclick=()=>{if(qty>1){qty--;update()}};
  qtyInput?.addEventListener("input",()=>{const p=selected();let n=parseInt(qtyInput.value||"0",10);if(!p){qty=0;return}if(n>p.quantity){alert(`Only ${p.quantity} item(s) are available.`);n=p.quantity;qtyInput.value=n}qty=Math.max(0,n);update()});
  document.getElementById("discount").oninput=update;
- document.getElementById("sellProductForm").addEventListener("submit",e=>{e.preventDefault();products=getProducts();const p=products.find(x=>String(x.id)===select.value),client=document.getElementById("clientName").value.trim(),entered=parseInt(qtyInput?.value||qty,10);if(!p||!client||!Number.isInteger(entered)||entered<1)return alert("Please select a product, enter a valid quantity and client name.");if(entered>p.quantity){return alert(`Only ${p.quantity} item(s) are available. You cannot sell more than the available quantity.`)}qty=entered;const gross=p.sellPrice*qty,d=Math.min(+document.getElementById("discount").value||0,gross),total=gross-d,profit=total-p.buyPrice*qty,now=new Date(),h=getHistory(),receiptNo="MY-"+now.getFullYear()+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(Date.now()).slice(-6),item={id:Date.now(),receiptNo,product:p.name,quantity:qty,unitPrice:p.sellPrice,subtotal:gross,total,discount:d,client,date:now.toLocaleDateString(),time:now.toLocaleTimeString(),profit};h.unshift(item);p.quantity-=qty;saveProducts(products);saveHistory(h);const s=getStats();s.sales+=total;s.profit+=profit;s.discount+=d;s.transactions++;if(d>0)s.discountCount++;saveStats(s);notify(`${p.name} sold to ${client}`,`${p.name} sold to ${client} • ${item.date} • ${item.time}`);if(p.quantity<=10){notify("Low stock alert",`${p.name} has only ${p.quantity} item(s) remaining.`)}openReceipt(item,true);});
+ document.getElementById("sellProductForm").addEventListener("submit",e=>{e.preventDefault();products=getProducts();const p=products.find(x=>String(x.id)===select.value),client=document.getElementById("clientName").value.trim(),entered=parseInt(qtyInput?.value||qty,10);if(!p||!client||!Number.isInteger(entered)||entered<1)return alert("Please select a product, enter a valid quantity and client name.");if(entered>p.quantity){return alert(`Only ${p.quantity} item(s) are available. You cannot sell more than the available quantity.`)}qty=entered;const gross=p.sellPrice*qty,d=Math.min(+document.getElementById("discount").value||0,gross),total=gross-d,profit=total-p.buyPrice*qty,now=new Date(),h=getHistory(),receiptNo="MY-"+now.getFullYear()+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(Date.now()).slice(-6),item={id:Date.now(),receiptNo,product:p.name,quantity:qty,unitPrice:p.sellPrice,subtotal:gross,total,discount:d,client,date:now.toLocaleDateString(),time:now.toLocaleTimeString(),profit};h.unshift(item);const previousQuantity=p.quantity;p.quantity-=qty;saveProducts(products);saveHistory(h);const s=getStats();s.sales+=total;s.profit+=profit;s.discount+=d;s.transactions++;if(d>0)s.discountCount++;saveStats(s);openReceipt(item,true);notify(`${p.name} sold to ${client}`,`${p.name} sold to ${client} • ${item.date} • ${item.time}`);if(previousQuantity>10&&p.quantity<=10){notify("Low stock alert",`${p.name} has only ${p.quantity} item(s) remaining.`)};});
 }
 function renderHistory(){const list=document.getElementById("historyList"),empty=document.getElementById("emptyHistory");if(!list)return;const h=getHistory();list.innerHTML="";h.forEach(x=>list.innerHTML+=`<article class="history-card"><div class="history-head"><div><h3>${escapeHTML(x.product)}</h3><small>${escapeHTML(x.receiptNo)}</small></div></div><div class="history-grid"><div><span>Quantity</span><br><b>${x.quantity}</b></div><div><span>Total Price</span><br><b>${money(x.total)}</b></div><div><span>Discount</span><br><b>${money(x.discount)}</b></div><div><span>Client Name</span><br><b>${escapeHTML(x.client)}</b></div><div><span>Date</span><br><b>${x.date}</b></div><div><span>Time</span><br><b>${x.time}</b></div></div><button class="view-receipt" data-id="${x.id}">View Receipt</button></article>`);empty.style.display=h.length?"none":"block";list.querySelectorAll(".view-receipt").forEach(b=>b.onclick=()=>{const x=getHistory().find(x=>x.id===+b.dataset.id);if(x)openReceipt(x,false)})}
 function deleteAllHistory(){const b=document.getElementById("deleteAllHistory");if(!b)return;b.onclick=()=>{if(confirm("Delete ALL sales history? This cannot be undone.")){saveHistory([]);renderHistory()}}}
